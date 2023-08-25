@@ -5,9 +5,12 @@ import type {
     SendTransactionOptions,
     SignerWalletAdapter,
     SignerWalletAdapterProps,
+    SignInMessageSignerWalletAdapter,
+    SignInMessageSignerWalletAdapterProps,
     WalletError,
     WalletName,
 } from '@solana/wallet-adapter-base';
+import type { SolanaSignInInput } from '@solana/wallet-standard-features';
 import { WalletNotConnectedError, WalletNotReadyError, WalletReadyState } from '@solana/wallet-adapter-base';
 import type { Connection, PublicKey, Transaction, TransactionSignature, VersionedTransaction } from '@solana/web3.js';
 import { get, writable } from 'svelte/store';
@@ -55,6 +58,7 @@ export interface WalletStore {
     signAllTransactions: SignerWalletAdapterProps['signAllTransactions'] | undefined;
     signMessage: MessageSignerWalletAdapterProps['signMessage'] | undefined;
     signTransaction: SignerWalletAdapterProps['signTransaction'] | undefined;
+    signIn: SignInMessageSignerWalletAdapterProps['signIn'] | undefined;
 }
 
 export const walletStore = createWalletStore();
@@ -134,6 +138,7 @@ function createWalletStore() {
         signTransaction: undefined,
         signAllTransactions: undefined,
         signMessage: undefined,
+        signIn: undefined,
     });
 
     function updateWalletState(adapter: Adapter | null) {
@@ -169,6 +174,7 @@ function createWalletStore() {
         let signTransaction: SignerWalletAdapter['signTransaction'] | undefined = undefined;
         let signAllTransactions: SignerWalletAdapter['signAllTransactions'] | undefined = undefined;
         let signMessage: MessageSignerWalletAdapter['signMessage'] | undefined = undefined;
+        let signIn: SignInMessageSignerWalletAdapter['signIn'] | undefined = undefined;
 
         if (adapter) {
             // Sign a transaction if the wallet supports it
@@ -195,6 +201,14 @@ function createWalletStore() {
                     const { connected } = get(walletStore);
                     if (!connected) throw newError(new WalletNotConnectedError());
                     return await adapter.signMessage(message);
+                };
+            }
+
+            if ('signIn' in adapter) {
+                signIn = async function (input?: SolanaSignInInput) {
+                    const { connected } = get(walletStore);
+                    if (!connected) throw newError(new WalletNotConnectedError());
+                    return await adapter.signIn(input);
                 };
             }
 
